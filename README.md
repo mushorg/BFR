@@ -2,7 +2,7 @@
 
 ## Better Function Replacer based on APD ##
 
-APD http://pecl.php.net/package/apd started to have issues with the current Zend API. Is some of my tools strongly rely on APD's function renaming and overwriting features, I was successful in extracting those features and bundling them into a 'new' Zend extension. All credits go to the original developers. Sadly they don't respond to issues with the original version.
+APD http://pecl.php.net/package/apd started to have issues with the current Zend API. As some of my tools strongly rely on APD's function renaming and overwriting features, I had to get my hands dirty. I finally was successful in extracting those features and bundling them into a 'new' Zend extension. All credits go to the original developers. Sadly they don't respond to issues with the original version.
 
 ### Installation ###
 
