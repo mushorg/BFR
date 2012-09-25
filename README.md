@@ -13,25 +13,35 @@ Get the source github style and run the following in the source directory:
 
 Output on my system looked like this. May vary depending on system.
 ```
-PHP Api Version: 20100412
-Zend Module Api No: 20100525
-Zend Extension Api No: 220100525
+Configuring for:
+PHP Api Version:         20100412
+Zend Module Api No:      20100525
+Zend Extension Api No:   220100525
 ```
 
 Run the usual stuff:
 ```
 # ./configure --enable-bfr
-```
-```
 # make && make install
 ```
-
-Modify your php.ini. Add:
 ```
-zend_extension = /usr/lib/php5/20100525/bfr.so
+Build complete.
+Don't forget to run 'make test'.
+
+Installing shared extensions:     /usr/lib/php5/20100525+lfs/
+```
+
+Modify your php.ini accordingly. Add:
+```
+zend_extension = /usr/lib/php5/20100525+lfs/bfr.so
 ```
 
 You should see the extension on the output of:
 ```
-php5 --version
+# php5 --version
+
+PHP 5.4.4-2 (cli) (built: Jun 20 2012 09:52:11)
+Copyright (c) 1997-2012 The PHP Group
+Zend Engine v2.4.0, Copyright (c) 1998-2012 Zend Technologies
+    with Better Function Replacer (BFR) v0.1, , by Lukas Rist
 ```
