@@ -52,12 +52,14 @@ Zend Engine v2.4.0, Copyright (c) 1998-2012 Zend Technologies
 Install the dependencies:
 ```
 pkg_add -r autoconf automake php git
+```
 
 Create symbolic links:
 ```
 
 # ln -s /usr/local/bin/php-config-5.3 /usr/local/bin/php-config
 # ln -s /usr/local/bin/phpize-5.3 /usr/local/bin/phpize
+```
 
 Get the source github style and run the following in the source directory:
 ```
@@ -76,6 +78,7 @@ Run the following comands. Replace the versions according to your system:
 ```
 # export AUTOCONF_VERSION=2.61
 # export AUTOMAKE_VERSION=1.9
+```
 
 Run the usual stuff:
 ```
