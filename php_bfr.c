@@ -1,4 +1,4 @@
-/* 
+/*
    +----------------------------------------------------------------------+
    | Better Function Replacer											  |
    | based on APD Profiler & Debugger     								  |
@@ -120,7 +120,7 @@ PHP_MINIT_FUNCTION(bfr)
 	REGISTER_INI_ENTRIES();
 	old_execute = zend_execute;
 	return SUCCESS;
-}	
+}
 
 
 PHP_RINIT_FUNCTION(bfr)
@@ -130,7 +130,7 @@ PHP_RINIT_FUNCTION(bfr)
 
 	BFR_GLOBALS(file_index) = 1;
 	BFR_GLOBALS(function_index) = 1;
-	
+
 	return SUCCESS;
 }
 
@@ -145,7 +145,7 @@ PHP_MINFO_FUNCTION(bfr)
 	php_info_print_table_header(2, "Better Function Replacer (BFR)", "Enabled");
 	php_info_print_table_row(2, "BFR Version", PHP_BFR_VERSION);
 	php_info_print_table_end();
-	
+
 	DISPLAY_INI_ENTRIES();
 }
 
@@ -160,10 +160,10 @@ PHP_FUNCTION(override_function)
 	char *eval_code,*eval_name;
 	int eval_code_length, retval;
 	zval *z_function_name, *z_function_args, *z_function_code;
-	
-	if (ZEND_NUM_ARGS() != 3 || 
-		zend_get_parameters(ht, 3, &z_function_name, &z_function_args, 
-							   &z_function_code) == FAILURE) 
+
+	if (ZEND_NUM_ARGS() != 3 ||
+		zend_get_parameters(ht, 3, &z_function_name, &z_function_args,
+							   &z_function_code) == FAILURE)
 		{
 			ZEND_WRONG_PARAM_COUNT();
 		}
@@ -172,7 +172,7 @@ PHP_FUNCTION(override_function)
 	convert_to_string_ex(&z_function_args);
 	convert_to_string_ex(&z_function_code);
 
-	eval_code_length = sizeof("function " TEMP_OVRD_FUNC_NAME) 
+	eval_code_length = sizeof("function " TEMP_OVRD_FUNC_NAME)
 		+ Z_STRLEN_P(z_function_args)
 		+ 2 /* parentheses */
 		+ 2 /* curlies */
@@ -189,7 +189,7 @@ PHP_FUNCTION(override_function)
 		zend_function *func;
 
 		if (zend_hash_find(EG(function_table), TEMP_OVRD_FUNC_NAME,
-						   sizeof(TEMP_OVRD_FUNC_NAME), (void **) &func) == FAILURE) 
+						   sizeof(TEMP_OVRD_FUNC_NAME), (void **) &func) == FAILURE)
 			{
 				zend_error(E_ERROR, "%s() temporary function name not present in global function_table", get_active_function_name(TSRMLS_C));
 				RETURN_FALSE;
@@ -199,12 +199,12 @@ PHP_FUNCTION(override_function)
 					  Z_STRLEN_P(z_function_name) + 1);
 		if(zend_hash_add(EG(function_table), Z_STRVAL_P(z_function_name),
 						 Z_STRLEN_P(z_function_name) + 1, func, sizeof(zend_function),
-						 NULL) == FAILURE) 
+						 NULL) == FAILURE)
 			{
 				RETURN_FALSE;
 			}
 		RETURN_TRUE;
-	}   
+	}
 	else {
 		RETURN_FALSE;
 	}
@@ -300,8 +300,8 @@ ZEND_DLEXPORT zend_extension zend_extension_entry = {
 	"Better Function Replacer (BFR)",
 	PHP_BFR_VERSION,
 	"Lukas Rist",
-	"http://glastopf.org/",
-	"",
+	"http://mushmush.org/",
+	"Copyright (C) 2015",
 	bfr_zend_startup,
 	bfr_zend_shutdown,
 	NULL,	   // activate_func_t
