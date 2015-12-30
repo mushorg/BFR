@@ -6,6 +6,11 @@ APD http://pecl.php.net/package/apd started to have issues with the current Zend
 
 ### Installation Linux ###
 
+Install requirements:
+```
+# sudo apt install php5-dev
+```
+
 Get the source github style and run the following in the source directory:
 ```
 # cd BFR
@@ -29,12 +34,12 @@ Run the usual stuff:
 Build complete.
 Don't forget to run 'make test'.
 
-Installing shared extensions:     /usr/lib/php5/20100525+lfs/
+Installing shared extensions:     /usr/lib/php5/20131226/
 ```
 
 Modify your php.ini accordingly. Add:
 ```
-zend_extension = /usr/lib/php5/20100525+lfs/bfr.so
+zend_extension = /usr/lib/php5/20131226/bfr.so
 ```
 
 You should see the extension on the output of:
@@ -101,7 +106,7 @@ You should see the extension on the output of:
 ```
 # php-5.3 --version
 
-PHP 5.3.14 with Suhosin-Patch (cli) (built: Aug  3 2012 07:43:07) 
+PHP 5.3.14 with Suhosin-Patch (cli) (built: Aug  3 2012 07:43:07)
 Copyright (c) 1997-2012 The PHP Group
 Zend Engine v2.3.0, Copyright (c) 1998-2012 Zend Technologies
     with Better Function Replacer (BFR) v0.1, , by Lukas Rist
