@@ -111,7 +111,7 @@ PHP_INI_END()
 
 static void php_bfr_init_globals(zend_bfr_globals *bfr_globals)
 {
-    memset(bfr_globals, 0, sizeof(bfr_globals));
+    memset(bfr_globals, 0, sizeof(zend_bfr_globals));
 }
 
 PHP_MINIT_FUNCTION(bfr)
@@ -243,8 +243,8 @@ PHP_FUNCTION(rename_function)
 			RETURN_FALSE;
 		}
 	/*
-	TODO: When use this function, SEGFAULT occuring. Temporary desicion: don't add original function to function table. 
-	Cons of this desicion:  we lost ptr to original function.
+	TODO: When use this function, SEGFAULT occurring. Temporary decision: don't add original function to function table. 
+	Cons of this decision:  we lost ptr to original function.
 
 	if(zend_hash_add(EG(function_table), Z_STRVAL_P(z_new_fname),
 					 Z_STRLEN_P(z_new_fname) + 1, func, sizeof(zend_function),
