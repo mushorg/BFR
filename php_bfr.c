@@ -81,7 +81,7 @@ zend_module_entry bfr_module_entry = {
 	"BFR",
 	bfr_functions,
 	PHP_MINIT(bfr),
-	NULL,
+	NULL,	
 	PHP_RINIT(bfr),
 	PHP_RSHUTDOWN(bfr),
 	PHP_MINFO(bfr),
@@ -242,6 +242,10 @@ PHP_FUNCTION(rename_function)
 					   Z_STRVAL_P(z_new_fname));
 			RETURN_FALSE;
 		}
+	/*
+	TODO: When use this function, SEGFAULT occuring. Temporary desicion: don't add original function to function table. 
+	Cons of this desicion:  we lost ptr to original function.
+
 	if(zend_hash_add(EG(function_table), Z_STRVAL_P(z_new_fname),
 					 Z_STRLEN_P(z_new_fname) + 1, func, sizeof(zend_function),
 					 NULL) == FAILURE)
@@ -251,6 +255,9 @@ PHP_FUNCTION(rename_function)
 					   Z_STRVAL_P(z_new_fname));
 			RETURN_FALSE;
 		}
+
+	*/
+
 	if(zend_hash_del(EG(function_table), Z_STRVAL_P(z_orig_fname),
 					 Z_STRLEN_P(z_orig_fname) + 1) == FAILURE)
 		{
