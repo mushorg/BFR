@@ -1,9 +1,9 @@
 /*
    +----------------------------------------------------------------------+
-   | Better Function Replacer											  |
-   | based on APD Profiler & Debugger     								  |
+   | Better Function Replacer                                             |
+   | based on APD Profiler & Debugger                                     |
    +----------------------------------------------------------------------+
-   | Copyright (c) 2001-2003 Community Connect Inc.  					  |
+   | Copyright (c) 2001-2003 Community Connect Inc.                       |
    +----------------------------------------------------------------------+
    | This source file is subject to version 2.02 of the PHP license,      |
    | that is bundled with this package in the file LICENSE, and is        |
@@ -13,7 +13,7 @@
    | obtain it through the world-wide-web, please send a note to          |
    | license@php.net so we can mail you a copy immediately.               |
    +----------------------------------------------------------------------+
-   | Authors: Lukas Rist <glaslos@gmail.com>							  |
+   | Authors: Lukas Rist <glaslos@gmail.com>                              |
    |          Daniel Cowgill <dcowgill@communityconnect.com>              |
    |          George Schlossnagle <george@lethargy.org>                   |
    |          Sterling Hughes <sterling@php.net>                          |
@@ -21,52 +21,12 @@
 */
 
 #include "php_bfr.h"
-#ifdef PHP_WIN32
-#include "win32compat.h"
-# define BFR_IS_INVALID_SOCKET(a)   (a == INVALID_SOCKET)
-#else
-#include <sys/time.h>
-#include <sys/resource.h>
-#include <sys/times.h>
-#include <unistd.h>
-# define BFR_IS_INVALID_SOCKET(a)   (a < 0)
-#endif
 
-#include "zend_API.h"
-#include "zend_hash.h"
-#include "zend_alloc.h"
-#include "zend_operators.h"
-#include "zend_globals.h"
-#include "zend_compile.h"
-#include <assert.h>
-#include <stdarg.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-
-#ifndef SUN_LEN
-#define SUN_LEN(su) (sizeof(*(su)) - sizeof((su)->sun_path) + strlen((su)->sun_path))
-#endif
-
-#ifndef PF_INET
-#define PF_INET AF_INET
-#endif
-
-/**
- * Tracng calls to zend_compile_file
- */
-#undef TRACE_ZEND_COMPILE /* define to trace all calls to zend_compile_file */
-ZEND_DLEXPORT zend_op_array* bfr_compile_file(zend_file_handle* TSRMLS_DC);
-ZEND_DLEXPORT zend_op_array* (*old_compile_file)(zend_file_handle* TSRMLS_DC);
-ZEND_DLEXPORT void (*old_execute)(zend_op_array *op_array TSRMLS_DC);
-
-ZEND_DLEXPORT void onStatement(zend_op_array *op_array);
 ZEND_DECLARE_MODULE_GLOBALS(bfr);
 
-/* This comes from php install tree. */
-#include "ext/standard/info.h"
-
-/* List of exported functions. */
-
+/* --------------------------------------------------------------------------
+   List of exported functions
+   --------------------------------------------------------------------------- */
 zend_function_entry bfr_functions[] = {
 	PHP_FE(override_function, NULL)
 	PHP_FE(rename_function, NULL)
@@ -78,7 +38,7 @@ zend_function_entry bfr_functions[] = {
    --------------------------------------------------------------------------- */
 zend_module_entry bfr_module_entry = {
 	STANDARD_MODULE_HEADER,
-	"BFR",
+	"bfr",
 	bfr_functions,
 	PHP_MINIT(bfr),
 	NULL,
@@ -97,13 +57,8 @@ ZEND_GET_MODULE(bfr)
    PHP Configuration Functions
    --------------------------------------------------------------------------- */
 
-static PHP_INI_MH(set_dumpdir)
-{
-}
-
 PHP_INI_BEGIN()
 PHP_INI_END()
-
 
 /* ---------------------------------------------------------------------------
    Module Startup and Shutdown Function Definitions
@@ -111,26 +66,18 @@ PHP_INI_END()
 
 static void php_bfr_init_globals(zend_bfr_globals *bfr_globals)
 {
-    memset(bfr_globals, 0, sizeof(bfr_globals));
+	memset(bfr_globals, 0, sizeof(zend_bfr_globals));
 }
 
 PHP_MINIT_FUNCTION(bfr)
 {
-	ZEND_INIT_MODULE_GLOBALS(bfr, php_bfr_init_globals, NULL)
+	ZEND_INIT_MODULE_GLOBALS(bfr, php_bfr_init_globals, NULL);
 	REGISTER_INI_ENTRIES();
-	old_execute = zend_execute;
 	return SUCCESS;
 }
 
-
 PHP_RINIT_FUNCTION(bfr)
 {
-	zend_hash_init(&BFR_GLOBALS(function_summary), 0, NULL, NULL, 1);
-	zend_hash_init(&BFR_GLOBALS(file_summary), 0, NULL, NULL, 1);
-
-	BFR_GLOBALS(file_index) = 1;
-	BFR_GLOBALS(function_index) = 1;
-
 	return SUCCESS;
 }
 
@@ -148,7 +95,6 @@ PHP_MINFO_FUNCTION(bfr)
 
 	DISPLAY_INI_ENTRIES();
 }
-
 
 /* ---------------------------------------------------------------------------
    PHP Extension Functions
@@ -268,21 +214,9 @@ PHP_FUNCTION(rename_function)
 // Zend Extension Functions
 // ---------------------------------------------------------------------------
 
-ZEND_DLEXPORT void onStatement(zend_op_array *op_array)
-{
-	TSRMLS_FETCH();
-}
-
 int bfr_zend_startup(zend_extension *extension)
 {
 	TSRMLS_FETCH();
-	/* Only enabled extended info when it is not disabled */
-#if (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION >= 3) || PHP_MAJOR_VERSION >= 6
-	CG(compiler_options) = CG(compiler_options) | ZEND_COMPILE_EXTENDED_INFO;
-#else
-	CG(extended_info) = 1;  /* XXX: this is ridiculous */
-#endif
-
 	return zend_startup_module(&bfr_module_entry);
 }
 
@@ -304,16 +238,16 @@ ZEND_DLEXPORT zend_extension zend_extension_entry = {
 	"Copyright (C) 2015",
 	bfr_zend_startup,
 	bfr_zend_shutdown,
-	NULL,	   // activate_func_t
-	NULL,	   // deactivate_func_t
-	NULL,	   // message_handler_func_t
-	NULL,	   // op_array_handler_func_t
-	onStatement, // statement_handler_func_t
-	NULL,   // fcall_begin_handler_func_t
-	NULL,   // fcall_end_handler_func_t
-	NULL,	   // op_array_ctor_func_t
-	NULL,	   // op_array_dtor_func_t
-	NULL,	   // api_no_check
+	NULL,      // activate_func_t
+	NULL,      // deactivate_func_t
+	NULL,      // message_handler_func_t
+	NULL,      // op_array_handler_func_t
+	NULL,      // statement_handler_func_t
+	NULL,      // fcall_begin_handler_func_t
+	NULL,      // fcall_end_handler_func_t
+	NULL,      // op_array_ctor_func_t
+	NULL,      // op_array_dtor_func_t
+	NULL,      // api_no_check
 	COMPAT_ZEND_EXTENSION_PROPERTIES
 };
 
