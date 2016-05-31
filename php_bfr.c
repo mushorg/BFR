@@ -105,115 +105,131 @@ PHP_MINFO_FUNCTION(bfr)
    --------------------------------------------------------------------------- */
 
 #define TEMP_OVRD_FUNC_NAME "__overridden__"
+#define TEMP_OVRD_FUNC_HEADER "function " TEMP_OVRD_FUNC_NAME
+#define TEMP_OVRD_FUNC_PATTERN TEMP_OVRD_FUNC_HEADER "(%s){%s}"
+#define TEMP_OVRD_FUNC_DESC "runtime-created override function"
 
 PHP_FUNCTION(override_function)
 {
 	char *eval_code, *eval_name;
 	int eval_code_length, retval;
-	zval *z_function_name, *z_function_args, *z_function_code;
+	char *z_function_name, *z_function_args, *z_function_code;
+	size_t function_name_len, function_args_len, function_code_len;
 
 	if (ZEND_NUM_ARGS() != 3 ||
-		zend_get_parameters(ht, 3, &z_function_name, &z_function_args,
-							&z_function_code) == FAILURE)
+		zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sss",
+							&z_function_name, &function_name_len,
+							&z_function_args, &function_args_len,
+							&z_function_code, &function_code_len) == FAILURE)
 	{
 		ZEND_WRONG_PARAM_COUNT();
 	}
 
-	convert_to_string_ex(&z_function_name);
-	convert_to_string_ex(&z_function_args);
-	convert_to_string_ex(&z_function_code);
-
-	eval_code_length = sizeof("function " TEMP_OVRD_FUNC_NAME)
-		+ Z_STRLEN_P(z_function_args)
+	eval_code_length = sizeof(TEMP_OVRD_FUNC_HEADER)
+		+ function_args_len
 		+ 2 /* parentheses */
 		+ 2 /* curlies */
-		+ Z_STRLEN_P(z_function_code);
+		+ function_code_len;
+
 	eval_code = (char *) emalloc(eval_code_length);
-	sprintf(eval_code, "function " TEMP_OVRD_FUNC_NAME "(%s){%s}",
-			Z_STRVAL_P(z_function_args), Z_STRVAL_P(z_function_code));
-	eval_name = zend_make_compiled_string_description("runtime-created override function" TSRMLS_CC);
+	sprintf(eval_code, TEMP_OVRD_FUNC_PATTERN, z_function_args, z_function_code);
+	eval_name = zend_make_compiled_string_description(TEMP_OVRD_FUNC_DESC TSRMLS_CC);
 	retval = zend_eval_string(eval_code, NULL, eval_name TSRMLS_CC);
 	efree(eval_code);
 	efree(eval_name);
 
-	if (retval == SUCCESS)
+	if (retval != SUCCESS)
 	{
-		zend_function *func;
+		zend_error(E_ERROR, "%s() failed to eval temporary function",
+				get_active_function_name(TSRMLS_C));
 
-		if (zend_hash_find(EG(function_table), TEMP_OVRD_FUNC_NAME,
-						sizeof(TEMP_OVRD_FUNC_NAME), (void **) &func) == FAILURE)
-		{
-			zend_error(E_ERROR, "%s() temporary function name not present in global function_table", get_active_function_name(TSRMLS_C));
-			RETURN_FALSE;
-		}
-		function_add_ref(func);
-		zend_hash_del(EG(function_table), Z_STRVAL_P(z_function_name),
-					Z_STRLEN_P(z_function_name) + 1);
-		if (zend_hash_add(EG(function_table), Z_STRVAL_P(z_function_name),
-						Z_STRLEN_P(z_function_name) + 1, func, sizeof(zend_function),
-						NULL) == FAILURE)
-		{
-			RETURN_FALSE;
-		}
-		RETURN_TRUE;
+		RETURN_FALSE;
 	}
-	else
+
+	zend_function *func;
+
+	if ((func = zend_hash_str_find_ptr(EG(function_table),
+									TEMP_OVRD_FUNC_NAME, sizeof(TEMP_OVRD_FUNC_NAME) - 1)) == NULL)
 	{
+		zend_error(E_ERROR, "%s() temporary function name not present in global function_table",
+				get_active_function_name(TSRMLS_C));
+
+		RETURN_FALSE;
+	}
+
+	function_add_ref(func);
+
+	if (zend_hash_str_add_new_ptr(EG(function_table),
+								z_function_name, function_name_len,
+								func) == NULL)
+	{
+		zend_error(E_ERROR, "%s() failed to add function",
+				get_active_function_name(TSRMLS_C));
+
+		RETURN_FALSE;
+	}
+
+	if (zend_hash_str_del(EG(function_table), TEMP_OVRD_FUNC_NAME,
+						sizeof(TEMP_OVRD_FUNC_NAME) - 1) == FAILURE)
+	{
+		zend_error(E_ERROR, "%s() failed to delete temporary function",
+				get_active_function_name(TSRMLS_C));
+
+		zend_hash_str_del(EG(function_table),
+						z_function_name, function_name_len);
+
 		RETURN_FALSE;
 	}
 }
 
 PHP_FUNCTION(rename_function)
 {
-	zval *z_orig_fname, *z_new_fname;
-	zend_function *func, *dummy_func;
+	char *z_orig_fname, *z_new_fname;
+	size_t orig_fname_len, new_fname_len;
+	zend_function *func;
 
 	if (ZEND_NUM_ARGS() != 2 ||
-		zend_get_parameters(ht, 2, &z_orig_fname, &z_new_fname) == FAILURE)
+		zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss",
+							&z_orig_fname, &orig_fname_len,
+							&z_new_fname, &new_fname_len) == FAILURE)
 	{
 		ZEND_WRONG_PARAM_COUNT();
 	}
 
-	convert_to_string_ex(&z_orig_fname);
-	convert_to_string_ex(&z_new_fname);
-
-	if (zend_hash_find(EG(function_table), Z_STRVAL_P(z_orig_fname),
-					Z_STRLEN_P(z_orig_fname) + 1, (void **) &func) == FAILURE)
+	if ((func = zend_hash_str_find_ptr(EG(function_table),
+									z_orig_fname, orig_fname_len)) == NULL)
 	{
 		zend_error(E_WARNING, "%s(%s, %s) failed: %s does not exist!",
 				get_active_function_name(TSRMLS_C),
-				Z_STRVAL_P(z_orig_fname), Z_STRVAL_P(z_new_fname),
-				Z_STRVAL_P(z_orig_fname));
+				z_orig_fname, z_new_fname, z_orig_fname);
+
 		RETURN_FALSE;
 	}
-	if (zend_hash_find(EG(function_table), Z_STRVAL_P(z_new_fname),
-					Z_STRLEN_P(z_new_fname) + 1, (void **) &dummy_func) == SUCCESS)
+	if (zend_hash_str_exists(EG(function_table), z_new_fname, new_fname_len))
 	{
 		zend_error(E_WARNING, "%s(%s, %s) failed: %s already exists!",
 				get_active_function_name(TSRMLS_C),
-				Z_STRVAL_P(z_orig_fname), Z_STRVAL_P(z_new_fname),
-				Z_STRVAL_P(z_new_fname));
+				z_orig_fname, z_new_fname, z_new_fname);
+
 		RETURN_FALSE;
 	}
-	if (zend_hash_add(EG(function_table), Z_STRVAL_P(z_new_fname),
-					Z_STRLEN_P(z_new_fname) + 1, func, sizeof(zend_function),
-					NULL) == FAILURE)
+	if (zend_hash_str_add_ptr(EG(function_table), z_new_fname, new_fname_len, func) == NULL)
 	{
 		zend_error(E_WARNING, "%s() failed to insert %s into EG(function_table)",
-				get_active_function_name(TSRMLS_C),
-				Z_STRVAL_P(z_new_fname));
+				get_active_function_name(TSRMLS_C), z_new_fname);
+
 		RETURN_FALSE;
 	}
-	if (zend_hash_del(EG(function_table), Z_STRVAL_P(z_orig_fname),
-					Z_STRLEN_P(z_orig_fname) + 1) == FAILURE)
+	if (zend_hash_str_del(EG(function_table), z_orig_fname, orig_fname_len) == FAILURE)
 	{
 		zend_error(E_WARNING, "%s() failed to remove %s from function table",
-				get_active_function_name(TSRMLS_C),
-				Z_STRVAL_P(z_orig_fname));
-		zend_hash_del(EG(function_table), Z_STRVAL_P(z_new_fname),
-					Z_STRLEN_P(z_new_fname) + 1);
+				get_active_function_name(TSRMLS_C), z_orig_fname);
+
+		zend_hash_str_del(EG(function_table), z_new_fname, new_fname_len);
+
 		RETURN_FALSE;
 	}
+
 	RETURN_TRUE;
 }
 
