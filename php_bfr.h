@@ -18,7 +18,7 @@
    |          George Schlossnagle <george@lethargy.org>                   |
    |          Sterling Hughes <sterling@php.net>                          |
    +----------------------------------------------------------------------+
-*/
+ */
 
 #ifndef PHP_BFR_H
 #define PHP_BFR_H
@@ -51,7 +51,6 @@ ZEND_END_MODULE_GLOBALS(bfr)
 PHPAPI ZEND_EXTERN_MODULE_GLOBALS(bfr)
 
 /* Declare global structure. */
-
 #ifdef ZTS
 #define BFR_GLOBALS(v) TSRMG(bfr_globals_id, zend_bfr_globals *, v)
 #else
