@@ -21,6 +21,7 @@
  */
 
 #include "php_bfr.h"
+#include "php_helpers.h"
 
 ZEND_DECLARE_MODULE_GLOBALS(bfr);
 
@@ -115,6 +116,7 @@ PHP_FUNCTION(override_function)
 	int eval_code_length, retval;
 	char *z_function_name, *z_function_args, *z_function_code;
 	size_t function_name_len, function_args_len, function_code_len;
+	zend_function *func, *func_dup;
 
 	if (ZEND_NUM_ARGS() != 3 ||
 		zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sss",
@@ -146,8 +148,6 @@ PHP_FUNCTION(override_function)
 		RETURN_FALSE;
 	}
 
-	zend_function *func;
-
 	if ((func = zend_hash_str_find_ptr(EG(function_table),
 									TEMP_OVRD_FUNC_NAME, sizeof(TEMP_OVRD_FUNC_NAME) - 1)) == NULL)
 	{
@@ -157,11 +157,11 @@ PHP_FUNCTION(override_function)
 		RETURN_FALSE;
 	}
 
-	function_add_ref(func);
+	func_dup = duplicate_function(func);
 
 	if (zend_hash_str_add_new_ptr(EG(function_table),
 								z_function_name, function_name_len,
-								func) == NULL)
+								func_dup) == NULL)
 	{
 		zend_error(E_ERROR, "%s() failed to add function",
 				get_active_function_name(TSRMLS_C));
@@ -213,7 +213,10 @@ PHP_FUNCTION(rename_function)
 
 		RETURN_FALSE;
 	}
-	if (zend_hash_str_add_ptr(EG(function_table), z_new_fname, new_fname_len, func) == NULL)
+
+	zend_function *func_dup = duplicate_function(func);
+
+	if (zend_hash_str_add_ptr(EG(function_table), z_new_fname, new_fname_len, func_dup) == NULL)
 	{
 		zend_error(E_WARNING, "%s() failed to insert %s into EG(function_table)",
 				get_active_function_name(TSRMLS_C), z_new_fname);
