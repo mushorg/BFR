@@ -194,7 +194,7 @@ PHP_FUNCTION(rename_function)
 {
 	char *z_orig_fname, *z_new_fname;
 	size_t orig_fname_len, new_fname_len;
-	zend_function *func;
+	zend_function *func, *func_dup;
 
 	if (ZEND_NUM_ARGS() != 2 ||
 		zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss",
@@ -222,7 +222,7 @@ PHP_FUNCTION(rename_function)
 		RETURN_FALSE;
 	}
 
-	zend_function *func_dup = duplicate_function(func);
+	func_dup = duplicate_function(func);
 
 	if (zend_hash_str_add_ptr(EG(function_table), z_new_fname, new_fname_len, func_dup) == NULL)
 	{
