@@ -17,6 +17,7 @@
    |          Daniel Cowgill <dcowgill@communityconnect.com>              |
    |          George Schlossnagle <george@lethargy.org>                   |
    |          Sterling Hughes <sterling@php.net>                          |
+   |          Nikita Tokarchuk <nikita@tokarch.uk>                        |
    +----------------------------------------------------------------------+
  */
 
