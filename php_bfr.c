@@ -159,6 +159,13 @@ PHP_FUNCTION(override_function)
 
 	func_dup = duplicate_function(func);
 
+	if (zend_hash_str_exists(EG(function_table),
+							z_function_name, function_name_len))
+	{
+		zend_hash_str_del(EG(function_table),
+						z_function_name, function_name_len);
+	}
+
 	if (zend_hash_str_add_new_ptr(EG(function_table),
 								z_function_name, function_name_len,
 								func_dup) == NULL)
