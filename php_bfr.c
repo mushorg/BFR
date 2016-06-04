@@ -1,9 +1,9 @@
 /*
    +----------------------------------------------------------------------+
-   | Better Function Replacer											  |
-   | based on APD Profiler & Debugger     								  |
+   | Better Function Replacer                                             |
+   | based on APD Profiler & Debugger                                     |
    +----------------------------------------------------------------------+
-   | Copyright (c) 2001-2003 Community Connect Inc.  					  |
+   | Copyright (c) 2001-2003 Community Connect Inc.                       |
    +----------------------------------------------------------------------+
    | This source file is subject to version 2.02 of the PHP license,      |
    | that is bundled with this package in the file LICENSE, and is        |
@@ -13,64 +13,28 @@
    | obtain it through the world-wide-web, please send a note to          |
    | license@php.net so we can mail you a copy immediately.               |
    +----------------------------------------------------------------------+
-   | Authors: Lukas Rist <glaslos@gmail.com>							  |
+   | Authors: Lukas Rist <glaslos@gmail.com>                              |
    |          Daniel Cowgill <dcowgill@communityconnect.com>              |
    |          George Schlossnagle <george@lethargy.org>                   |
    |          Sterling Hughes <sterling@php.net>                          |
+   |          Nikita Tokarchuk <nikita@tokarch.uk>                        |
    +----------------------------------------------------------------------+
-*/
+ */
 
 #include "php_bfr.h"
-#ifdef PHP_WIN32
-#include "win32compat.h"
-# define BFR_IS_INVALID_SOCKET(a)   (a == INVALID_SOCKET)
-#else
-#include <sys/time.h>
-#include <sys/resource.h>
-#include <sys/times.h>
-#include <unistd.h>
-# define BFR_IS_INVALID_SOCKET(a)   (a < 0)
-#endif
+#include "php_helpers.h"
 
-#include "zend_API.h"
-#include "zend_hash.h"
-#include "zend_alloc.h"
-#include "zend_operators.h"
-#include "zend_globals.h"
-#include "zend_compile.h"
-#include <assert.h>
-#include <stdarg.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-
-#ifndef SUN_LEN
-#define SUN_LEN(su) (sizeof(*(su)) - sizeof((su)->sun_path) + strlen((su)->sun_path))
-#endif
-
-#ifndef PF_INET
-#define PF_INET AF_INET
-#endif
-
-/**
- * Tracng calls to zend_compile_file
- */
-#undef TRACE_ZEND_COMPILE /* define to trace all calls to zend_compile_file */
-ZEND_DLEXPORT zend_op_array* bfr_compile_file(zend_file_handle* TSRMLS_DC);
-ZEND_DLEXPORT zend_op_array* (*old_compile_file)(zend_file_handle* TSRMLS_DC);
-ZEND_DLEXPORT void (*old_execute)(zend_op_array *op_array TSRMLS_DC);
-
-ZEND_DLEXPORT void onStatement(zend_op_array *op_array);
 ZEND_DECLARE_MODULE_GLOBALS(bfr);
 
-/* This comes from php install tree. */
-#include "ext/standard/info.h"
-
-/* List of exported functions. */
-
+/* --------------------------------------------------------------------------
+   List of exported functions
+   --------------------------------------------------------------------------- */
 zend_function_entry bfr_functions[] = {
 	PHP_FE(override_function, NULL)
 	PHP_FE(rename_function, NULL)
-	{NULL, NULL, NULL}
+	{
+		NULL, NULL, NULL
+	}
 };
 
 /* --------------------------------------------------------------------------
@@ -78,7 +42,7 @@ zend_function_entry bfr_functions[] = {
    --------------------------------------------------------------------------- */
 zend_module_entry bfr_module_entry = {
 	STANDARD_MODULE_HEADER,
-	"BFR",
+	"bfr",
 	bfr_functions,
 	PHP_MINIT(bfr),
 	NULL,
@@ -90,20 +54,17 @@ zend_module_entry bfr_module_entry = {
 };
 
 #if COMPILE_DL_BFR
+
 ZEND_GET_MODULE(bfr)
+
 #endif
 
 /* ---------------------------------------------------------------------------
    PHP Configuration Functions
    --------------------------------------------------------------------------- */
 
-static PHP_INI_MH(set_dumpdir)
-{
-}
-
 PHP_INI_BEGIN()
 PHP_INI_END()
-
 
 /* ---------------------------------------------------------------------------
    Module Startup and Shutdown Function Definitions
@@ -111,26 +72,18 @@ PHP_INI_END()
 
 static void php_bfr_init_globals(zend_bfr_globals *bfr_globals)
 {
-    memset(bfr_globals, 0, sizeof(bfr_globals));
+	memset(bfr_globals, 0, sizeof(zend_bfr_globals));
 }
 
 PHP_MINIT_FUNCTION(bfr)
 {
-	ZEND_INIT_MODULE_GLOBALS(bfr, php_bfr_init_globals, NULL)
+	ZEND_INIT_MODULE_GLOBALS(bfr, php_bfr_init_globals, NULL);
 	REGISTER_INI_ENTRIES();
-	old_execute = zend_execute;
 	return SUCCESS;
 }
 
-
 PHP_RINIT_FUNCTION(bfr)
 {
-	zend_hash_init(&BFR_GLOBALS(function_summary), 0, NULL, NULL, 1);
-	zend_hash_init(&BFR_GLOBALS(file_summary), 0, NULL, NULL, 1);
-
-	BFR_GLOBALS(file_index) = 1;
-	BFR_GLOBALS(function_index) = 1;
-
 	return SUCCESS;
 }
 
@@ -149,118 +102,145 @@ PHP_MINFO_FUNCTION(bfr)
 	DISPLAY_INI_ENTRIES();
 }
 
-
 /* ---------------------------------------------------------------------------
    PHP Extension Functions
    --------------------------------------------------------------------------- */
 
 #define TEMP_OVRD_FUNC_NAME "__overridden__"
+#define TEMP_OVRD_FUNC_HEADER "function " TEMP_OVRD_FUNC_NAME
+#define TEMP_OVRD_FUNC_PATTERN TEMP_OVRD_FUNC_HEADER "(%s){%s}"
+#define TEMP_OVRD_FUNC_DESC "runtime-created override function"
+
 PHP_FUNCTION(override_function)
 {
-	char *eval_code,*eval_name;
+	char *eval_code, *eval_name;
 	int eval_code_length, retval;
-	zval *z_function_name, *z_function_args, *z_function_code;
+	char *z_function_name, *z_function_args, *z_function_code;
+	size_t function_name_len, function_args_len, function_code_len;
+	zend_function *func, *func_dup;
 
 	if (ZEND_NUM_ARGS() != 3 ||
-		zend_get_parameters(ht, 3, &z_function_name, &z_function_args,
-							   &z_function_code) == FAILURE)
-		{
-			ZEND_WRONG_PARAM_COUNT();
-		}
+		zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sss",
+							&z_function_name, &function_name_len,
+							&z_function_args, &function_args_len,
+							&z_function_code, &function_code_len) == FAILURE)
+	{
+		ZEND_WRONG_PARAM_COUNT();
+	}
 
-	convert_to_string_ex(&z_function_name);
-	convert_to_string_ex(&z_function_args);
-	convert_to_string_ex(&z_function_code);
-
-	eval_code_length = sizeof("function " TEMP_OVRD_FUNC_NAME)
-		+ Z_STRLEN_P(z_function_args)
+	eval_code_length = sizeof(TEMP_OVRD_FUNC_HEADER)
+		+ function_args_len
 		+ 2 /* parentheses */
 		+ 2 /* curlies */
-		+ Z_STRLEN_P(z_function_code);
+		+ function_code_len;
+
 	eval_code = (char *) emalloc(eval_code_length);
-	sprintf(eval_code, "function " TEMP_OVRD_FUNC_NAME "(%s){%s}",
-			Z_STRVAL_P(z_function_args), Z_STRVAL_P(z_function_code));
-	eval_name = zend_make_compiled_string_description("runtime-created override function" TSRMLS_CC);
+	sprintf(eval_code, TEMP_OVRD_FUNC_PATTERN, z_function_args, z_function_code);
+	eval_name = zend_make_compiled_string_description(TEMP_OVRD_FUNC_DESC TSRMLS_CC);
 	retval = zend_eval_string(eval_code, NULL, eval_name TSRMLS_CC);
 	efree(eval_code);
 	efree(eval_name);
 
-	if (retval == SUCCESS) {
-		zend_function *func;
+	if (retval != SUCCESS)
+	{
+		zend_error(E_ERROR, "%s() failed to eval temporary function",
+				get_active_function_name(TSRMLS_C));
 
-		if (zend_hash_find(EG(function_table), TEMP_OVRD_FUNC_NAME,
-						   sizeof(TEMP_OVRD_FUNC_NAME), (void **) &func) == FAILURE)
-			{
-				zend_error(E_ERROR, "%s() temporary function name not present in global function_table", get_active_function_name(TSRMLS_C));
-				RETURN_FALSE;
-			}
-		function_add_ref(func);
-		zend_hash_del(EG(function_table), Z_STRVAL_P(z_function_name),
-					  Z_STRLEN_P(z_function_name) + 1);
-		if(zend_hash_add(EG(function_table), Z_STRVAL_P(z_function_name),
-						 Z_STRLEN_P(z_function_name) + 1, func, sizeof(zend_function),
-						 NULL) == FAILURE)
-			{
-				RETURN_FALSE;
-			}
-		RETURN_TRUE;
+		RETURN_FALSE;
 	}
-	else {
+
+	if ((func = zend_hash_str_find_ptr(EG(function_table),
+									TEMP_OVRD_FUNC_NAME, sizeof(TEMP_OVRD_FUNC_NAME) - 1)) == NULL)
+	{
+		zend_error(E_ERROR, "%s() temporary function name not present in global function_table",
+				get_active_function_name(TSRMLS_C));
+
+		RETURN_FALSE;
+	}
+
+	func_dup = duplicate_function(func);
+
+	if (zend_hash_str_exists(EG(function_table),
+							z_function_name, function_name_len))
+	{
+		zend_hash_str_del(EG(function_table),
+						z_function_name, function_name_len);
+	}
+
+	if (zend_hash_str_add_new_ptr(EG(function_table),
+								z_function_name, function_name_len,
+								func_dup) == NULL)
+	{
+		zend_error(E_ERROR, "%s() failed to add function",
+				get_active_function_name(TSRMLS_C));
+
+		RETURN_FALSE;
+	}
+
+	if (zend_hash_str_del(EG(function_table), TEMP_OVRD_FUNC_NAME,
+						sizeof(TEMP_OVRD_FUNC_NAME) - 1) == FAILURE)
+	{
+		zend_error(E_ERROR, "%s() failed to delete temporary function",
+				get_active_function_name(TSRMLS_C));
+
+		zend_hash_str_del(EG(function_table),
+						z_function_name, function_name_len);
+
 		RETURN_FALSE;
 	}
 }
 
 PHP_FUNCTION(rename_function)
 {
-	zval *z_orig_fname, *z_new_fname;
-	zend_function *func, *dummy_func;
+	char *z_orig_fname, *z_new_fname;
+	size_t orig_fname_len, new_fname_len;
+	zend_function *func, *func_dup;
 
-	if( ZEND_NUM_ARGS() != 2 ||
-		zend_get_parameters(ht, 2, &z_orig_fname, &z_new_fname) == FAILURE )
-		{
-			ZEND_WRONG_PARAM_COUNT();
-		}
+	if (ZEND_NUM_ARGS() != 2 ||
+		zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss",
+							&z_orig_fname, &orig_fname_len,
+							&z_new_fname, &new_fname_len) == FAILURE)
+	{
+		ZEND_WRONG_PARAM_COUNT();
+	}
 
-	convert_to_string_ex(&z_orig_fname);
-	convert_to_string_ex(&z_new_fname);
+	if ((func = zend_hash_str_find_ptr(EG(function_table),
+									z_orig_fname, orig_fname_len)) == NULL)
+	{
+		zend_error(E_WARNING, "%s(%s, %s) failed: %s does not exist!",
+				get_active_function_name(TSRMLS_C),
+				z_orig_fname, z_new_fname, z_orig_fname);
 
-	if(zend_hash_find(EG(function_table), Z_STRVAL_P(z_orig_fname),
-					  Z_STRLEN_P(z_orig_fname) + 1, (void **) &func) == FAILURE)
-		{
-			zend_error(E_WARNING, "%s(%s, %s) failed: %s does not exist!",
-					   get_active_function_name(TSRMLS_C),
-					   Z_STRVAL_P(z_orig_fname),  Z_STRVAL_P(z_new_fname),
-					   Z_STRVAL_P(z_orig_fname));
-			RETURN_FALSE;
-		}
-	if(zend_hash_find(EG(function_table), Z_STRVAL_P(z_new_fname),
-					  Z_STRLEN_P(z_new_fname) + 1, (void **) &dummy_func) == SUCCESS)
-		{
-			zend_error(E_WARNING, "%s(%s, %s) failed: %s already exists!",
-					   get_active_function_name(TSRMLS_C),
-					   Z_STRVAL_P(z_orig_fname),  Z_STRVAL_P(z_new_fname),
-					   Z_STRVAL_P(z_new_fname));
-			RETURN_FALSE;
-		}
-	if(zend_hash_add(EG(function_table), Z_STRVAL_P(z_new_fname),
-					 Z_STRLEN_P(z_new_fname) + 1, func, sizeof(zend_function),
-					 NULL) == FAILURE)
-		{
-			zend_error(E_WARNING, "%s() failed to insert %s into EG(function_table)",
-					   get_active_function_name(TSRMLS_C),
-					   Z_STRVAL_P(z_new_fname));
-			RETURN_FALSE;
-		}
-	if(zend_hash_del(EG(function_table), Z_STRVAL_P(z_orig_fname),
-					 Z_STRLEN_P(z_orig_fname) + 1) == FAILURE)
-		{
-			zend_error(E_WARNING, "%s() failed to remove %s from function table",
-					   get_active_function_name(TSRMLS_C),
-					   Z_STRVAL_P(z_orig_fname));
-			zend_hash_del(EG(function_table), Z_STRVAL_P(z_new_fname),
-						  Z_STRLEN_P(z_new_fname) + 1);
-			RETURN_FALSE;
-		}
+		RETURN_FALSE;
+	}
+	if (zend_hash_str_exists(EG(function_table), z_new_fname, new_fname_len))
+	{
+		zend_error(E_WARNING, "%s(%s, %s) failed: %s already exists!",
+				get_active_function_name(TSRMLS_C),
+				z_orig_fname, z_new_fname, z_new_fname);
+
+		RETURN_FALSE;
+	}
+
+	func_dup = duplicate_function(func);
+
+	if (zend_hash_str_add_ptr(EG(function_table), z_new_fname, new_fname_len, func_dup) == NULL)
+	{
+		zend_error(E_WARNING, "%s() failed to insert %s into EG(function_table)",
+				get_active_function_name(TSRMLS_C), z_new_fname);
+
+		RETURN_FALSE;
+	}
+	if (zend_hash_str_del(EG(function_table), z_orig_fname, orig_fname_len) == FAILURE)
+	{
+		zend_error(E_WARNING, "%s() failed to remove %s from function table",
+				get_active_function_name(TSRMLS_C), z_orig_fname);
+
+		zend_hash_str_del(EG(function_table), z_new_fname, new_fname_len);
+
+		RETURN_FALSE;
+	}
+
 	RETURN_TRUE;
 }
 
@@ -268,21 +248,9 @@ PHP_FUNCTION(rename_function)
 // Zend Extension Functions
 // ---------------------------------------------------------------------------
 
-ZEND_DLEXPORT void onStatement(zend_op_array *op_array)
-{
-	TSRMLS_FETCH();
-}
-
 int bfr_zend_startup(zend_extension *extension)
 {
 	TSRMLS_FETCH();
-	/* Only enabled extended info when it is not disabled */
-#if (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION >= 3) || PHP_MAJOR_VERSION >= 6
-	CG(compiler_options) = CG(compiler_options) | ZEND_COMPILE_EXTENDED_INFO;
-#else
-	CG(extended_info) = 1;  /* XXX: this is ridiculous */
-#endif
-
 	return zend_startup_module(&bfr_module_entry);
 }
 
@@ -292,7 +260,7 @@ ZEND_DLEXPORT void bfr_zend_shutdown(zend_extension *extension)
 }
 
 #ifndef ZEND_EXT_API
-#define ZEND_EXT_API	ZEND_DLEXPORT
+#define ZEND_EXT_API ZEND_DLEXPORT
 #endif
 ZEND_EXTENSION();
 
@@ -304,16 +272,16 @@ ZEND_DLEXPORT zend_extension zend_extension_entry = {
 	"Copyright (C) 2015",
 	bfr_zend_startup,
 	bfr_zend_shutdown,
-	NULL,	   // activate_func_t
-	NULL,	   // deactivate_func_t
-	NULL,	   // message_handler_func_t
-	NULL,	   // op_array_handler_func_t
-	onStatement, // statement_handler_func_t
-	NULL,   // fcall_begin_handler_func_t
-	NULL,   // fcall_end_handler_func_t
-	NULL,	   // op_array_ctor_func_t
-	NULL,	   // op_array_dtor_func_t
-	NULL,	   // api_no_check
+	NULL, // activate_func_t
+	NULL, // deactivate_func_t
+	NULL, // message_handler_func_t
+	NULL, // op_array_handler_func_t
+	NULL, // statement_handler_func_t
+	NULL, // fcall_begin_handler_func_t
+	NULL, // fcall_end_handler_func_t
+	NULL, // op_array_ctor_func_t
+	NULL, // op_array_dtor_func_t
+	NULL, // api_no_check
 	COMPAT_ZEND_EXTENSION_PROPERTIES
 };
 

@@ -8,7 +8,7 @@ APD http://pecl.php.net/package/apd started to have issues with the current Zend
 
 Install requirements:
 ```
-# sudo apt install php5-dev
+# sudo apt install php-dev
 ```
 
 Get the source github style and run the following in the source directory:
@@ -20,9 +20,9 @@ Get the source github style and run the following in the source directory:
 Output on my system looked like this. May vary depending on system.
 ```
 Configuring for:
-PHP Api Version:         20100412
-Zend Module Api No:      20100525
-Zend Extension Api No:   220100525
+PHP Api Version:         20151012
+Zend Module Api No:      20151012
+Zend Extension Api No:   320151012
 ```
 
 Run the usual stuff:
@@ -34,22 +34,22 @@ Run the usual stuff:
 Build complete.
 Don't forget to run 'make test'.
 
-Installing shared extensions:     /usr/lib/php5/20131226/
+Installing shared extensions:     /usr/lib/php/20131226/
 ```
 
 Modify your php.ini accordingly. Add:
 ```
-zend_extension = /usr/lib/php5/20131226/bfr.so
+zend_extension = /usr/lib/php/20131226/bfr.so
 ```
 
 You should see the extension on the output of:
 ```
-# php5 --version
+# php --version
 
-PHP 5.4.4-2 (cli) (built: Jun 20 2012 09:52:11)
-Copyright (c) 1997-2012 The PHP Group
-Zend Engine v2.4.0, Copyright (c) 1998-2012 Zend Technologies
-    with Better Function Replacer (BFR) v0.1, , by Lukas Rist
+PHP 7.0.7 (cli) (built: Jun  1 2016 00:58:54) ( NTS )
+Copyright (c) 1997-2016 The PHP Group
+Zend Engine v3.0.0, Copyright (c) 1998-2016 Zend Technologies
+    with Better Function Replacer (BFR) v0.1, Copyright (C) 2015, by Lukas Rist
 ```
 
 ### Installation *BSD ###
@@ -62,8 +62,8 @@ pkg_add -r autoconf automake php git
 Create symbolic links:
 ```
 
-# ln -s /usr/local/bin/php-config-5.3 /usr/local/bin/php-config
-# ln -s /usr/local/bin/phpize-5.3 /usr/local/bin/phpize
+# ln -s /usr/local/bin/php-config-7.0 /usr/local/bin/php-config
+# ln -s /usr/local/bin/phpize-7.0 /usr/local/bin/phpize
 ```
 
 Get the source github style and run the following in the source directory:
@@ -75,9 +75,9 @@ Get the source github style and run the following in the source directory:
 Output on my system looked like this. May vary depending on system.
 ```
 Configuring for:
-PHP Api Version:         20100412
-Zend Module Api No:      20100525
-Zend Extension Api No:   220100525
+PHP Api Version:         20151012
+Zend Module Api No:      20151012
+Zend Extension Api No:   320151012
 ```
 Run the following comands. Replace the versions according to your system:
 ```
@@ -94,21 +94,21 @@ Run the usual stuff:
 Build complete.
 Don't forget to run 'make test'.
 
-Installing shared extensions:     /usr/local/lib/php-5.3/modules/
+Installing shared extensions:     /usr/local/lib/php-7.0/modules/
 ```
 
 Modify your php.ini accordingly. Add:
 ```
-zend_extension = /usr/local/lib/php-5.3/modules/bfr.so
+zend_extension = /usr/local/lib/php-7.0/modules/bfr.so
 ```
 
 You should see the extension on the output of:
 ```
-# php-5.3 --version
+# php-7.0 --version
 
-PHP 5.3.14 with Suhosin-Patch (cli) (built: Aug  3 2012 07:43:07)
-Copyright (c) 1997-2012 The PHP Group
-Zend Engine v2.3.0, Copyright (c) 1998-2012 Zend Technologies
+PHP 7.0.7 with Suhosin-Patch (cli) (built: Jun  1 2016 00:58:54)
+Copyright (c) 1997-2016 The PHP Group
+Zend Engine v3.0.0, Copyright (c) 1998-2016 Zend Technologies
     with Better Function Replacer (BFR) v0.1, , by Lukas Rist
     with Suhosin v0.9.33, Copyright (c) 2007-2012, by SektionEins GmbH
 ```
