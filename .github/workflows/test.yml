@@ -34,6 +34,6 @@ jobs:
     - name: enable extension
       run: |
         sudo php --ini | grep Loaded
-        sudo echo "zend_extension = /usr/lib/php/20190902/modules/bfr.so" >> /etc/php/7.4/cli/php.ini
+        echo "zend_extension = /usr/lib/php/20190902/modules/bfr.so" | sudo tee -a /etc/php/7.4/cli/php.ini
     - name: php version
       run: php --version
