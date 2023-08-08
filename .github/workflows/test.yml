@@ -13,7 +13,7 @@ jobs:
 
     steps:
     - name: dependencies
-      run: sudo apt-get install -y php7-dev
+      run: sudo apt-get install -y php-dev
     - uses: actions/checkout@v3
     - name: phpize
       run: phpize
