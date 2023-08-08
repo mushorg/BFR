@@ -14,6 +14,8 @@ jobs:
     steps:
     - name: dependencies
       run: sudo apt-get install -y php-dev
+    - name: php version
+      run: php --version
     - uses: actions/checkout@v3
     - name: phpize
       run: phpize
