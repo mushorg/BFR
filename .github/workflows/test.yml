@@ -14,7 +14,7 @@ jobs:
     steps:
     - name: dependencies
       run: |
-        sudo apt remove php php8
+        sudo apt remove php
         sudo add-apt-repository ppa:ondrej/php
         sudo apt-get install -y php7.4-dev
     - name: php version
