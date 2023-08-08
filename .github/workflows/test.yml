@@ -23,7 +23,7 @@ jobs:
       run: php --version
     - uses: actions/checkout@v3
     - name: phpize
-      run: phpize
+      run: phpize7.4
     - name: configure
       run: ./configure --enable-bfr
     - name: make
