@@ -14,9 +14,11 @@ jobs:
     steps:
     - name: dependencies
       run: |
-        sudo apt remove php
         sudo add-apt-repository ppa:ondrej/php
         sudo apt-get install -y php7.4-dev
+        sudo update-alternatives --list php
+        sudo update-alternatives --set php /usr/bin/php7.4
+        sudo update-alternatives --list php
     - name: php version
       run: php --version
     - uses: actions/checkout@v3
