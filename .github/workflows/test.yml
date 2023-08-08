@@ -31,5 +31,9 @@ jobs:
       run: make
     - name: make install
       run: sudo make install
+    - name: enable extension
+      run: |
+        sudo php --ini | grep Loaded
+        sudo echo "zend_extension = /usr/lib/php/20190902/modules/bfr.so" >> /etc/php/7.0/php.ini
     - name: php version
       run: php --version
