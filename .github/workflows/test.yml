@@ -35,5 +35,5 @@ jobs:
       run: |
         sudo php --ini | grep Loaded
         echo "zend_extension = /usr/lib/php/20190902/bfr.so" | sudo tee -a /etc/php/7.4/cli/php.ini
-    - name: php version
-      run: php --version
+    - name: php version test
+      run: php --version | grep "with Better Function Replacer"
