@@ -1,0 +1,27 @@
+name: C/C++ CI
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: dependencies
+      run: sudo apt-get install -y php7-dev
+    - uses: actions/checkout@v3
+    - name: phpize
+      run: phpize
+    - name: configure
+      run: ./configure --enable-bfr
+    - name: make
+      run: make
+    - name: make check
+      run: make check
+    - name: make distcheck
+      run: make distcheck
