@@ -13,7 +13,7 @@ jobs:
 
     steps:
     - name: dependencies
-      run: sudo apt-get install -y php-dev
+      run: sudo apt-get install -y php7.4-dev
     - name: php version
       run: php --version
     - uses: actions/checkout@v3
