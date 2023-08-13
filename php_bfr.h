@@ -44,7 +44,7 @@ PHP_MINFO_FUNCTION(bfr);
 
 extern zend_module_entry bfr_module_entry;
 
-#define PHP_BFR_VERSION "1.0"
+#define PHP_BFR_VERSION "1.0.0"
 
 ZEND_BEGIN_MODULE_GLOBALS(bfr)
 ZEND_END_MODULE_GLOBALS(bfr)
