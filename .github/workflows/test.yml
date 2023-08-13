@@ -13,18 +13,12 @@ jobs:
 
     steps:
     - name: dependencies
-      run: |
-        sudo add-apt-repository ppa:ondrej/php
-        sudo apt-get install -y php7.4-dev
-        sudo apt remove -y php8.1 php8.1-dev
-        sudo update-alternatives --list php
-        sudo update-alternatives --set php /usr/bin/php7.4
-        sudo update-alternatives --list php
+      run: sudo apt-get install -y php8.1 php8.1-dev
     - name: php version
       run: php --version
     - uses: actions/checkout@v3
     - name: phpize
-      run: phpize7.4
+      run: phpize
     - name: configure
       run: ./configure --enable-bfr
     - name: make
@@ -34,6 +28,6 @@ jobs:
     - name: enable extension
       run: |
         sudo php --ini | grep Loaded
-        echo "zend_extension = /usr/lib/php/20190902/bfr.so" | sudo tee -a /etc/php/7.4/cli/php.ini
+        echo "zend_extension = /usr/lib/php/20210902/bfr.so" | sudo tee -a /etc/php/8.1/cli/php.ini
     - name: php version test
       run: php --version | grep "with Better Function Replacer"
