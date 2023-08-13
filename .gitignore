@@ -29,5 +29,8 @@ mkinstalldirs
 php_bfr.lo
 php_helpers.lo
 run-tests.php
+php_bfr.loT
+php_bfr.dep
+php_helpers.dep
 
 .vscode

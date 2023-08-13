@@ -29,9 +29,16 @@ ZEND_DECLARE_MODULE_GLOBALS(bfr);
 /* --------------------------------------------------------------------------
    List of exported functions
    --------------------------------------------------------------------------- */
+
+ZEND_BEGIN_ARG_INFO(arginfo_override_function, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO(arginfo_rename_function, 0)
+ZEND_END_ARG_INFO()
+
 zend_function_entry bfr_functions[] = {
-	PHP_FE(override_function, NULL)
-	PHP_FE(rename_function, NULL)
+	PHP_FE(override_function, arginfo_override_function)
+	PHP_FE(rename_function, arginfo_rename_function)
 	{
 		NULL, NULL, NULL
 	}
@@ -120,7 +127,7 @@ PHP_FUNCTION(override_function)
 	zend_function *func, *func_dup;
 
 	if (ZEND_NUM_ARGS() != 3 ||
-		zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sss",
+		zend_parse_parameters(ZEND_NUM_ARGS(), "sss",
 							&z_function_name, &function_name_len,
 							&z_function_args, &function_args_len,
 							&z_function_code, &function_code_len) == FAILURE)
@@ -136,15 +143,15 @@ PHP_FUNCTION(override_function)
 
 	eval_code = (char *) emalloc(eval_code_length);
 	sprintf(eval_code, TEMP_OVRD_FUNC_PATTERN, z_function_args, z_function_code);
-	eval_name = zend_make_compiled_string_description(TEMP_OVRD_FUNC_DESC TSRMLS_CC);
-	retval = zend_eval_string(eval_code, NULL, eval_name TSRMLS_CC);
+	eval_name = zend_make_compiled_string_description(TEMP_OVRD_FUNC_DESC);
+	retval = zend_eval_string(eval_code, NULL, eval_name);
 	efree(eval_code);
 	efree(eval_name);
 
 	if (retval != SUCCESS)
 	{
 		zend_error(E_ERROR, "%s() failed to eval temporary function",
-				get_active_function_name(TSRMLS_C));
+				get_active_function_name());
 
 		RETURN_FALSE;
 	}
@@ -153,7 +160,7 @@ PHP_FUNCTION(override_function)
 									TEMP_OVRD_FUNC_NAME, sizeof(TEMP_OVRD_FUNC_NAME) - 1)) == NULL)
 	{
 		zend_error(E_ERROR, "%s() temporary function name not present in global function_table",
-				get_active_function_name(TSRMLS_C));
+				get_active_function_name());
 
 		RETURN_FALSE;
 	}
@@ -172,7 +179,7 @@ PHP_FUNCTION(override_function)
 								func_dup) == NULL)
 	{
 		zend_error(E_ERROR, "%s() failed to add function",
-				get_active_function_name(TSRMLS_C));
+				get_active_function_name());
 
 		RETURN_FALSE;
 	}
@@ -181,7 +188,7 @@ PHP_FUNCTION(override_function)
 						sizeof(TEMP_OVRD_FUNC_NAME) - 1) == FAILURE)
 	{
 		zend_error(E_ERROR, "%s() failed to delete temporary function",
-				get_active_function_name(TSRMLS_C));
+				get_active_function_name());
 
 		zend_hash_str_del(EG(function_table),
 						z_function_name, function_name_len);
@@ -197,7 +204,7 @@ PHP_FUNCTION(rename_function)
 	zend_function *func, *func_dup;
 
 	if (ZEND_NUM_ARGS() != 2 ||
-		zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss",
+		zend_parse_parameters(ZEND_NUM_ARGS(), "ss",
 							&z_orig_fname, &orig_fname_len,
 							&z_new_fname, &new_fname_len) == FAILURE)
 	{
@@ -208,7 +215,7 @@ PHP_FUNCTION(rename_function)
 									z_orig_fname, orig_fname_len)) == NULL)
 	{
 		zend_error(E_WARNING, "%s(%s, %s) failed: %s does not exist!",
-				get_active_function_name(TSRMLS_C),
+				get_active_function_name(),
 				z_orig_fname, z_new_fname, z_orig_fname);
 
 		RETURN_FALSE;
@@ -216,7 +223,7 @@ PHP_FUNCTION(rename_function)
 	if (zend_hash_str_exists(EG(function_table), z_new_fname, new_fname_len))
 	{
 		zend_error(E_WARNING, "%s(%s, %s) failed: %s already exists!",
-				get_active_function_name(TSRMLS_C),
+				get_active_function_name(),
 				z_orig_fname, z_new_fname, z_new_fname);
 
 		RETURN_FALSE;
@@ -227,14 +234,14 @@ PHP_FUNCTION(rename_function)
 	if (zend_hash_str_add_ptr(EG(function_table), z_new_fname, new_fname_len, func_dup) == NULL)
 	{
 		zend_error(E_WARNING, "%s() failed to insert %s into EG(function_table)",
-				get_active_function_name(TSRMLS_C), z_new_fname);
+				get_active_function_name(), z_new_fname);
 
 		RETURN_FALSE;
 	}
 	if (zend_hash_str_del(EG(function_table), z_orig_fname, orig_fname_len) == FAILURE)
 	{
 		zend_error(E_WARNING, "%s() failed to remove %s from function table",
-				get_active_function_name(TSRMLS_C), z_orig_fname);
+				get_active_function_name(), z_orig_fname);
 
 		zend_hash_str_del(EG(function_table), z_new_fname, new_fname_len);
 
@@ -250,7 +257,6 @@ PHP_FUNCTION(rename_function)
 
 int bfr_zend_startup(zend_extension *extension)
 {
-	TSRMLS_FETCH();
 	return zend_startup_module(&bfr_module_entry);
 }
 

@@ -7,6 +7,8 @@ APD http://pecl.php.net/package/apd started to have issues with the current Zend
 ### Installation Linux ###
 
 Install requirements:
+
+We need PHP, specifically PHP 8
 ```
 # sudo apt install php-dev
 ```
@@ -20,9 +22,9 @@ Get the source github style and run the following in the source directory:
 Output on my system looked like this. May vary depending on system.
 ```
 Configuring for:
-PHP Api Version:         20190902
-Zend Module Api No:      20190902
-Zend Extension Api No:   320190902
+PHP Api Version:         20210902
+Zend Module Api No:      20210902
+Zend Extension Api No:   420210902
 ```
 
 Run the usual stuff:
@@ -34,7 +36,7 @@ Run the usual stuff:
 Build complete.
 Don't forget to run 'make test'.
 
-Installing shared extensions:     /usr/lib/php/20190902/
+Installing shared extensions:     /usr/lib/php/20210902/
 ```
 
 Modify your php.ini accordingly. 
@@ -46,18 +48,18 @@ php --ini | grep Loaded
 
 Add the extension to the ini (example):
 ```
-echo "zend_extension = /usr/lib/php/20190902/bfr.so" | sudo tee -a /etc/php/7.4/cli/php.ini
+echo "zend_extension = /usr/lib/php/20210902/bfr.so" | sudo tee -a /etc/php/8.1/cli/php.ini
 ```
 
 You should see the extension on the output of:
 ```
 # php --version
 
-PHP 7.4.3-4ubuntu2.19 (cli) (built: Jun 27 2023 15:49:59) ( NTS )
+PHP 8.1.2-1ubuntu2.13 (cli) (built: Jun 28 2023 14:01:49) (NTS)
 Copyright (c) The PHP Group
-Zend Engine v3.4.0, Copyright (c) Zend Technologies
+Zend Engine v4.1.2, Copyright (c) Zend Technologies
     with Better Function Replacer (BFR) v0.1, Copyright (C) 2015, by Lukas Rist
-    with Zend OPcache v7.4.3-4ubuntu2.19, Copyright (c), by Zend Technologies
+    with Zend OPcache v8.1.2-1ubuntu2.13, Copyright (c), by Zend Technologies
 ```
 
 ### Installation *BSD ###
