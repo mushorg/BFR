@@ -15,6 +15,7 @@ config.nice
 config.status
 config.sub
 configure
+configure.ac
 configure.in
 install-sh
 libtool
@@ -26,4 +27,7 @@ Makefile.objects
 missing
 mkinstalldirs
 php_bfr.lo
+php_helpers.lo
 run-tests.php
+
+.vscode

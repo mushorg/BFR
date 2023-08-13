@@ -20,9 +20,9 @@ Get the source github style and run the following in the source directory:
 Output on my system looked like this. May vary depending on system.
 ```
 Configuring for:
-PHP Api Version:         20151012
-Zend Module Api No:      20151012
-Zend Extension Api No:   320151012
+PHP Api Version:         20190902
+Zend Module Api No:      20190902
+Zend Extension Api No:   320190902
 ```
 
 Run the usual stuff:
@@ -34,22 +34,30 @@ Run the usual stuff:
 Build complete.
 Don't forget to run 'make test'.
 
-Installing shared extensions:     /usr/lib/php/20131226/
+Installing shared extensions:     /usr/lib/php/20190902/
 ```
 
-Modify your php.ini accordingly. Add:
+Modify your php.ini accordingly. 
+
+Find the php.ini file:
 ```
-zend_extension = /usr/lib/php/20131226/bfr.so
+php --ini | grep Loaded
+```
+
+Add the extension to the ini (example):
+```
+echo "zend_extension = /usr/lib/php/20190902/bfr.so" | sudo tee -a /etc/php/7.4/cli/php.ini
 ```
 
 You should see the extension on the output of:
 ```
 # php --version
 
-PHP 7.0.7 (cli) (built: Jun  1 2016 00:58:54) ( NTS )
-Copyright (c) 1997-2016 The PHP Group
-Zend Engine v3.0.0, Copyright (c) 1998-2016 Zend Technologies
+PHP 7.4.3-4ubuntu2.19 (cli) (built: Jun 27 2023 15:49:59) ( NTS )
+Copyright (c) The PHP Group
+Zend Engine v3.4.0, Copyright (c) Zend Technologies
     with Better Function Replacer (BFR) v0.1, Copyright (C) 2015, by Lukas Rist
+    with Zend OPcache v7.4.3-4ubuntu2.19, Copyright (c), by Zend Technologies
 ```
 
 ### Installation *BSD ###
