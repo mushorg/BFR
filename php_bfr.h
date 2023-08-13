@@ -1,4 +1,4 @@
-/* 
+/*
    +----------------------------------------------------------------------+
    | Better Function Replacer                                             |
    | based on APD Profiler & Debugger                                     |
@@ -44,7 +44,7 @@ PHP_MINFO_FUNCTION(bfr);
 
 extern zend_module_entry bfr_module_entry;
 
-#define PHP_BFR_VERSION "0.1"
+#define PHP_BFR_VERSION "1.0"
 
 ZEND_BEGIN_MODULE_GLOBALS(bfr)
 ZEND_END_MODULE_GLOBALS(bfr)
@@ -52,10 +52,6 @@ ZEND_END_MODULE_GLOBALS(bfr)
 PHPAPI ZEND_EXTERN_MODULE_GLOBALS(bfr)
 
 /* Declare global structure. */
-#ifdef ZTS
-#define BFR_GLOBALS(v) TSRMG(bfr_globals_id, zend_bfr_globals *, v)
-#else
 #define BFR_GLOBALS(v) (bfr_globals.v)
-#endif
 
 #endif

@@ -38,11 +38,8 @@ ZEND_END_ARG_INFO()
 
 zend_function_entry bfr_functions[] = {
 	PHP_FE(override_function, arginfo_override_function)
-	PHP_FE(rename_function, arginfo_rename_function)
-	{
-		NULL, NULL, NULL
-	}
-};
+		PHP_FE(rename_function, arginfo_rename_function){
+			NULL, NULL, NULL}};
 
 /* --------------------------------------------------------------------------
    Module Entry
@@ -57,8 +54,7 @@ zend_module_entry bfr_module_entry = {
 	PHP_RSHUTDOWN(bfr),
 	PHP_MINFO(bfr),
 	PHP_BFR_VERSION,
-	STANDARD_MODULE_PROPERTIES
-};
+	STANDARD_MODULE_PROPERTIES};
 
 #if COMPILE_DL_BFR
 
@@ -128,20 +124,18 @@ PHP_FUNCTION(override_function)
 
 	if (ZEND_NUM_ARGS() != 3 ||
 		zend_parse_parameters(ZEND_NUM_ARGS(), "sss",
-							&z_function_name, &function_name_len,
-							&z_function_args, &function_args_len,
-							&z_function_code, &function_code_len) == FAILURE)
+							  &z_function_name, &function_name_len,
+							  &z_function_args, &function_args_len,
+							  &z_function_code, &function_code_len) == FAILURE)
 	{
 		ZEND_WRONG_PARAM_COUNT();
 	}
 
-	eval_code_length = sizeof(TEMP_OVRD_FUNC_HEADER)
-		+ function_args_len
-		+ 2 /* parentheses */
-		+ 2 /* curlies */
-		+ function_code_len;
+	eval_code_length = sizeof(TEMP_OVRD_FUNC_HEADER) + function_args_len + 2 /* parentheses */
+					   + 2													 /* curlies */
+					   + function_code_len;
 
-	eval_code = (char *) emalloc(eval_code_length);
+	eval_code = (char *)emalloc(eval_code_length);
 	sprintf(eval_code, TEMP_OVRD_FUNC_PATTERN, z_function_args, z_function_code);
 	eval_name = zend_make_compiled_string_description(TEMP_OVRD_FUNC_DESC);
 	retval = zend_eval_string(eval_code, NULL, eval_name);
@@ -151,16 +145,16 @@ PHP_FUNCTION(override_function)
 	if (retval != SUCCESS)
 	{
 		zend_error(E_ERROR, "%s() failed to eval temporary function",
-				get_active_function_name());
+				   get_active_function_name());
 
 		RETURN_FALSE;
 	}
 
 	if ((func = zend_hash_str_find_ptr(EG(function_table),
-									TEMP_OVRD_FUNC_NAME, sizeof(TEMP_OVRD_FUNC_NAME) - 1)) == NULL)
+									   TEMP_OVRD_FUNC_NAME, sizeof(TEMP_OVRD_FUNC_NAME) - 1)) == NULL)
 	{
 		zend_error(E_ERROR, "%s() temporary function name not present in global function_table",
-				get_active_function_name());
+				   get_active_function_name());
 
 		RETURN_FALSE;
 	}
@@ -168,30 +162,30 @@ PHP_FUNCTION(override_function)
 	func_dup = duplicate_function(func);
 
 	if (zend_hash_str_exists(EG(function_table),
-							z_function_name, function_name_len))
+							 z_function_name, function_name_len))
 	{
 		zend_hash_str_del(EG(function_table),
-						z_function_name, function_name_len);
+						  z_function_name, function_name_len);
 	}
 
 	if (zend_hash_str_add_new_ptr(EG(function_table),
-								z_function_name, function_name_len,
-								func_dup) == NULL)
+								  z_function_name, function_name_len,
+								  func_dup) == NULL)
 	{
 		zend_error(E_ERROR, "%s() failed to add function",
-				get_active_function_name());
+				   get_active_function_name());
 
 		RETURN_FALSE;
 	}
 
 	if (zend_hash_str_del(EG(function_table), TEMP_OVRD_FUNC_NAME,
-						sizeof(TEMP_OVRD_FUNC_NAME) - 1) == FAILURE)
+						  sizeof(TEMP_OVRD_FUNC_NAME) - 1) == FAILURE)
 	{
 		zend_error(E_ERROR, "%s() failed to delete temporary function",
-				get_active_function_name());
+				   get_active_function_name());
 
 		zend_hash_str_del(EG(function_table),
-						z_function_name, function_name_len);
+						  z_function_name, function_name_len);
 
 		RETURN_FALSE;
 	}
@@ -205,26 +199,26 @@ PHP_FUNCTION(rename_function)
 
 	if (ZEND_NUM_ARGS() != 2 ||
 		zend_parse_parameters(ZEND_NUM_ARGS(), "ss",
-							&z_orig_fname, &orig_fname_len,
-							&z_new_fname, &new_fname_len) == FAILURE)
+							  &z_orig_fname, &orig_fname_len,
+							  &z_new_fname, &new_fname_len) == FAILURE)
 	{
 		ZEND_WRONG_PARAM_COUNT();
 	}
 
 	if ((func = zend_hash_str_find_ptr(EG(function_table),
-									z_orig_fname, orig_fname_len)) == NULL)
+									   z_orig_fname, orig_fname_len)) == NULL)
 	{
 		zend_error(E_WARNING, "%s(%s, %s) failed: %s does not exist!",
-				get_active_function_name(),
-				z_orig_fname, z_new_fname, z_orig_fname);
+				   get_active_function_name(),
+				   z_orig_fname, z_new_fname, z_orig_fname);
 
 		RETURN_FALSE;
 	}
 	if (zend_hash_str_exists(EG(function_table), z_new_fname, new_fname_len))
 	{
 		zend_error(E_WARNING, "%s(%s, %s) failed: %s already exists!",
-				get_active_function_name(),
-				z_orig_fname, z_new_fname, z_new_fname);
+				   get_active_function_name(),
+				   z_orig_fname, z_new_fname, z_new_fname);
 
 		RETURN_FALSE;
 	}
@@ -234,14 +228,14 @@ PHP_FUNCTION(rename_function)
 	if (zend_hash_str_add_ptr(EG(function_table), z_new_fname, new_fname_len, func_dup) == NULL)
 	{
 		zend_error(E_WARNING, "%s() failed to insert %s into EG(function_table)",
-				get_active_function_name(), z_new_fname);
+				   get_active_function_name(), z_new_fname);
 
 		RETURN_FALSE;
 	}
 	if (zend_hash_str_del(EG(function_table), z_orig_fname, orig_fname_len) == FAILURE)
 	{
 		zend_error(E_WARNING, "%s() failed to remove %s from function table",
-				get_active_function_name(), z_orig_fname);
+				   get_active_function_name(), z_orig_fname);
 
 		zend_hash_str_del(EG(function_table), z_new_fname, new_fname_len);
 
@@ -275,7 +269,7 @@ ZEND_DLEXPORT zend_extension zend_extension_entry = {
 	PHP_BFR_VERSION,
 	"Lukas Rist",
 	"http://mushmush.org/",
-	"Copyright (C) 2015",
+	"Copyright (C) 2023",
 	bfr_zend_startup,
 	bfr_zend_shutdown,
 	NULL, // activate_func_t
@@ -288,15 +282,4 @@ ZEND_DLEXPORT zend_extension zend_extension_entry = {
 	NULL, // op_array_ctor_func_t
 	NULL, // op_array_dtor_func_t
 	NULL, // api_no_check
-	COMPAT_ZEND_EXTENSION_PROPERTIES
-};
-
-/**
- * Local Variables:
- * indent-tabs-mode: t
- * tab-width: 4
- * c-basic-offset: 4
- * End:
- * vim600:fdm=marker
- * vim:noet:sw=4:ts=4
- */
+	COMPAT_ZEND_EXTENSION_PROPERTIES};

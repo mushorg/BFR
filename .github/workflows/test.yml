@@ -2,32 +2,31 @@ name: C/C++ CI
 
 on:
   push:
-    branches: [ "master" ]
+    branches: ["master"]
   pull_request:
-    branches: [ "master" ]
+    branches: ["master"]
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
-    - name: dependencies
-      run: sudo apt-get install -y php8.1 php8.1-dev
-    - name: php version
-      run: php --version
-    - uses: actions/checkout@v3
-    - name: phpize
-      run: phpize
-    - name: configure
-      run: ./configure --enable-bfr
-    - name: make
-      run: make
-    - name: make install
-      run: sudo make install
-    - name: enable extension
-      run: |
-        sudo php --ini | grep Loaded
-        echo "zend_extension = /usr/lib/php/20210902/bfr.so" | sudo tee -a /etc/php/8.1/cli/php.ini
-    - name: php version test
-      run: php --version | grep "with Better Function Replacer"
+      - name: dependencies
+        run: sudo apt-get install -y php8.1 php8.1-dev
+      - name: php version
+        run: php --version
+      - uses: actions/checkout@v3
+      - name: phpize
+        run: phpize
+      - name: configure
+        run: ./configure --enable-bfr
+      - name: make
+        run: make
+      - name: make install
+        run: sudo make install
+      - name: enable extension
+        run: |
+          sudo php --ini | grep Loaded
+          echo "zend_extension = /usr/lib/php/20210902/bfr.so" | sudo tee -a /etc/php/8.1/cli/php.ini
+      - name: php version test
+        run: php --version | grep "with Better Function Replacer"
